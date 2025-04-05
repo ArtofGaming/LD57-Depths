@@ -4,9 +4,11 @@ using JetBrains.Annotations;
 using Mono.Cecil.Cil;
 using UnityEditor.Rendering.CustomRenderTexture.ShaderGraph;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class DungeonTree : MonoBehaviour
 {
+    Queue<Room> tree = new Queue<Room>(); 
     System.Random rand = new System.Random();
     Vector2 dungeonSize = new Vector2(40,40);
     Room root;
@@ -50,37 +52,89 @@ public class DungeonTree : MonoBehaviour
             if (rand.Next(0,1) == 0)
             {
                 Debug.Log(currentRoom);
+                if (currentRoom.parent != null)
+                {
+                    Debug.Log(currentRoom.parent);
+                }
+                else 
+                {
+                    Debug.Log("Still at root");
+                }
                 cutLocation.x = rand.Next(1,(int)dungeonSize.x - 1);
                 //Debug.Log(currentRoom.leftChild);
                 currentRoom.InsertLeftChild();
-                currentRoom.leftChild.topLeftCornerPosition = new Vector2(0,0);
-                currentRoom.leftChild.bottomRightCornerPosition = new Vector2(cutLocation.x - 1,40);
-                currentRoom.InsertRightChild(new Room());
-                currentRoom.rightChild.topLeftCornerPosition = new Vector2(cutLocation.x,0);
-                currentRoom.rightChild.bottomRightCornerPosition = new Vector2(cutLocation.x,40);
+                currentRoom.leftChild.topLeftCornerPosition = new Vector2(currentRoom.topLeftCornerPosition.x,currentRoom.topLeftCornerPosition.y);
+                currentRoom.leftChild.bottomRightCornerPosition = new Vector2(cutLocation.x - 1,currentRoom.bottomRightCornerPosition.y);
+                //parentRoom = currentRoom;
+                currentRoom.leftChild.parent = currentRoom;
+                currentRoom.InsertRightChild();
+                currentRoom.rightChild.topLeftCornerPosition = new Vector2(cutLocation.x,currentRoom.topLeftCornerPosition.y);
+                currentRoom.rightChild.bottomRightCornerPosition = new Vector2(cutLocation.x,currentRoom.bottomRightCornerPosition.y);
+                //parentRoom = currentRoom;
+                currentRoom.rightChild.parent = currentRoom;
+                currentRoom.leftChild.sibling = currentRoom.rightChild;
+                currentRoom.rightChild.sibling = currentRoom.leftChild;
             }
             else
             {
                 cutLocation.y = rand.Next(1,(int)dungeonSize.x - 1);
-                currentRoom.InsertLeftChild(new Room());
-                currentRoom.leftChild.topLeftCornerPosition = new Vector2(0,0);
-                currentRoom.leftChild.bottomRightCornerPosition = new Vector2(0,cutLocation.y - 1);
-                currentRoom.InsertRightChild(new Room());
-                currentRoom.rightChild.topLeftCornerPosition = new Vector2(0,cutLocation.y);
-                currentRoom.rightChild.bottomRightCornerPosition = new Vector2(0,40);
+                currentRoom.InsertLeftChild();
+                currentRoom.leftChild.topLeftCornerPosition = new Vector2(currentRoom.topLeftCornerPosition.x,currentRoom.topLeftCornerPosition.y);
+                currentRoom.leftChild.bottomRightCornerPosition = new Vector2(currentRoom.bottomRightCornerPosition.x,cutLocation.y - 1);
+                //parentRoom = currentRoom;
+                currentRoom.leftChild.parent = currentRoom;
+                currentRoom.InsertRightChild();
+                currentRoom.rightChild.topLeftCornerPosition = new Vector2(currentRoom.topLeftCornerPosition.x,cutLocation.y);
+                currentRoom.rightChild.bottomRightCornerPosition = new Vector2(currentRoom.topLeftCornerPosition.x,currentRoom.bottomRightCornerPosition.y);
+                //parentRoom = currentRoom;
+                currentRoom.rightChild.parent = currentRoom;
+                currentRoom.leftChild.sibling = currentRoom.rightChild;
+                currentRoom.rightChild.sibling = currentRoom.leftChild;
             }
-            
+            //Debug.Log(x);
+            Room nextRoom = null;
             if (rand.Next(0,1) == 0) 
             {
-                currentRoom.leftChild = currentRoom;
+                nextRoom = currentRoom.leftChild;
+                currentRoom = nextRoom;
             }
             else 
             {
-                currentRoom.rightChild = currentRoom;
+                nextRoom = currentRoom.rightChild;
+                currentRoom = nextRoom;
             }
-            x++;
+            
         }
+        FindUndividedRooms();
         //Debug.Log(x);
+    }
+
+    public void FindUndividedRooms()
+    {
+        int x = 1;
+        tree.Enqueue(root);
+        Room dequeuedElement = null;
+        while (tree.Count > 0 && x <= depth)
+        {
+            dequeuedElement = tree.Dequeue();
+            if (dequeuedElement.leftChild == null)
+            {
+                dequeuedElement = currentRoom;
+                DivideRoom();
+            }
+            else 
+            {
+                tree.Enqueue(dequeuedElement.leftChild);
+                tree.Enqueue(dequeuedElement.rightChild);
+                x++;
+            }
+
+        }
+    }
+
+    public void VerifyAllRoomsDivided()
+    {
+
     }
 }
 
@@ -102,23 +156,14 @@ public class Room
             Debug.LogError(this + " already has a left child.");
         }
     }
-    public void InsertLeftChild(Room child)
-    {
-        if (leftChild == null)
-        {
-            leftChild = child;
-        }
-        else {
-            Debug.LogError(this + " already has a left child.");
-        }
-    }
-    public void InsertRightChild(Room child)
+    public void InsertRightChild()
     {
         if (rightChild == null)
         {
-            rightChild = child;
+            rightChild = new Room();
         }
-        else {
+        else 
+        {
             Debug.LogError(this + " already has a right child.");
         }
     }
