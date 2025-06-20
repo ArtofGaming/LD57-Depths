@@ -60,5 +60,5 @@
         "**/*.rpymc": true,
         "**/cache/": true
     },
-    "dotnet.defaultSolution": "LD57-Depths.sln"
+    "dotnet.defaultSolution": "LD57-Depths2.sln"
 }
