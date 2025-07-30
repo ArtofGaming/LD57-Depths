@@ -47,6 +47,8 @@ public class DungeonTree : MonoBehaviour
     public void BinarySpatialPartition()
     {
         floor.ClearAllTiles();
+        tree.Clear();
+        roomList.Clear();
         if (GameObject.FindGameObjectsWithTag("Enemy") != null)
         {
             foreach (GameObject enemy in GameObject.FindGameObjectsWithTag("Enemy"))
@@ -87,11 +89,21 @@ public class DungeonTree : MonoBehaviour
             {
                 break;
             }
+            else if (currentRoom.width <= 5)
+            {
+                break;
+            }
             else
             {
-                //cutLocation = rand.Next(currentRoom.topLeftCornerPosition.x, currentRoom.)
+                cutLocation = rand.Next(currentRoom.topLeftCornerPosition.x + 2, currentRoom.bottomRightCornerPosition.x - 2);
                 currentRoom.InsertLeftChild();
-                CreateLeftChild(currentRoom.leftChild,)
+                CreateLeftChild(currentRoom.leftChild, cutLocation, true);
+                roomList.Add(currentRoom.leftChild);
+                tree.Enqueue(currentRoom.leftChild);
+                currentRoom.InsertRightChild();
+                CreateRightChild(currentRoom.rightChild, cutLocation, true);
+                roomList.Add(currentRoom.rightChild);
+                tree.Enqueue(currentRoom.rightChild);
                 for (int j = 0; j < Math.Pow(2, i); j++)
                 {
                     if (roomList.Count() >= desiredNumberOfRooms)
@@ -100,7 +112,7 @@ public class DungeonTree : MonoBehaviour
                     }
                     else
                     {
-
+                        DivideRoom(tree.Dequeue());
                     }
                 }
             }
@@ -237,17 +249,62 @@ public class DungeonTree : MonoBehaviour
         }
     }
 
+    void PaintConnection(Room room1, Room room2, int minX, int maxX, Tilemap tilemap, TileBase tile, TileBase altTile)
+    {
+        for (int j = room1.bottomRightCornerPosition.y; j < room2.topLeftCornerPosition.y; j++)
+        {
+            for (int i = minX; i <= maxX; i++)
+            {
+                var tilePosition = new Vector3Int(i,j, 0);
+                chance = rand.NextDouble();
+                if (chance < .25)
+                {
+                    tilemap.SetTile(tilePosition, altTile);
+                }
+                else
+                {
+                    tilemap.SetTile(tilePosition, tile);
+                }
+            }
+        }
+    }
+
     void ConnectRooms(Tilemap tilemap, TileBase tile)
     {
+        int minX = 100;
+        int maxX = 0;
         int pathBLCornerX = 0;
         int pathBRCornerX = 0;
         Room room1 = tree.Dequeue();
         Room room2 = tree.Peek();
-        while (tree.Count() > 1)
+        if (room1.topLeftCornerPosition.y > room2.topLeftCornerPosition.y)
         {
+                Room forSwitching = room1;
+                room1 = room2;
+                room2 = forSwitching;
+        }
+            if (room1.topLeftCornerPosition.x < room2.topLeftCornerPosition.x)
+            {
+                minX = room2.topLeftCornerPosition.x;
+            }
+            else
+            {
+                minX = room1.topLeftCornerPosition.x;
+            }
+
+            if (room1.bottomRightCornerPosition.x < room2.bottomRightCornerPosition.x)
+            {
+                maxX = room1.bottomRightCornerPosition.x;
+            }
+            else
+            {
+                maxX = room2.bottomRightCornerPosition.x;
+            }
+
+        PaintConnection(room1, room2, minX, maxX, tilemap, tile, altFloorTile);
 
             //rooms have overlap
-            if (Math.Abs(room2.bottomRightCornerPosition.x - room1.topLeftCornerPosition.x) < room2.width)
+            /*if (Math.Abs(room2.bottomRightCornerPosition.x - room1.topLeftCornerPosition.x) < room2.width)
             {
                 int overlap = room2.bottomRightCornerPosition.x - room1.topLeftCornerPosition.x;
                 int excessL = room2.topLeftCornerPosition.x - room1.topLeftCornerPosition.x;
@@ -376,6 +433,7 @@ public class DungeonTree : MonoBehaviour
                 }
             }
         }*/
+        
     }
 }
 
