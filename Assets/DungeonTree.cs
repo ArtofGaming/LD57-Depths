@@ -59,14 +59,15 @@ public class DungeonTree : MonoBehaviour
         root = new Room();
         roomList.Clear();
         //walkable.Clear();
-        currentRoom = root;
-        currentRoom.height = 30;
-        currentRoom.width = 30;
-        currentRoom.bottomRightCornerPosition = new Vector2Int(currentRoom.width, currentRoom.height);
-        currentRoom.x = 0;
-        currentRoom.y = 0;
+        //currentRoom = root;
+        root.height = 30;
+        root.width = 30;
+        root.bottomRightCornerPosition = new Vector2Int(root.width, root.height);
+        root.x = 0;
+        root.y = 0;
+        tree.Enqueue(root);
         roomList.Add(root);
-        DivideRoom(root);
+        DivideRoom(tree.Dequeue());
     }
     /*Debug.Log(currentRoom.leftChild.topLeftCornerPosition + " " + currentRoom.leftChild.bottomRightCornerPosition);
     currentRoom.InsertRightChild();
@@ -83,19 +84,27 @@ public class DungeonTree : MonoBehaviour
     //Debug.Log(x);
     public void DivideRoom(Room currentRoom)
     {
-        for (int i = 0; i < 5; i++)
+        if (currentRoom == root)
         {
-            if (roomList.Count() >= desiredNumberOfRooms)
+            roomList.Remove(currentRoom);
+            cutLocation = rand.Next(currentRoom.topLeftCornerPosition.x + 2, currentRoom.bottomRightCornerPosition.x - 2);
+            currentRoom.InsertLeftChild();
+            CreateLeftChild(currentRoom.leftChild, cutLocation, true);
+            roomList.Add(currentRoom.leftChild);
+            tree.Enqueue(currentRoom.leftChild);
+            currentRoom.InsertRightChild();
+            CreateRightChild(currentRoom.rightChild, cutLocation, true);
+            roomList.Add(currentRoom.rightChild);
+            tree.Enqueue(currentRoom.rightChild);
+            DivideRoom(tree.Dequeue());
+        }
+        while (tree.Count() != 0)
+        {
+            if (currentRoom.width > 8)
             {
-                break;
-            }
-            else if (currentRoom.width <= 5)
-            {
-                break;
-            }
-            else
-            {
-                cutLocation = rand.Next(currentRoom.topLeftCornerPosition.x + 2, currentRoom.bottomRightCornerPosition.x - 2);
+                roomList.Remove(currentRoom);
+                Debug.Log(currentRoom.width / 2);
+                cutLocation = rand.Next(currentRoom.topLeftCornerPosition.x + ((currentRoom.width / 2) - 2), currentRoom.bottomRightCornerPosition.x - ((currentRoom.width / 2) + 2));
                 currentRoom.InsertLeftChild();
                 CreateLeftChild(currentRoom.leftChild, cutLocation, true);
                 roomList.Add(currentRoom.leftChild);
@@ -104,74 +113,67 @@ public class DungeonTree : MonoBehaviour
                 CreateRightChild(currentRoom.rightChild, cutLocation, true);
                 roomList.Add(currentRoom.rightChild);
                 tree.Enqueue(currentRoom.rightChild);
-                for (int j = 0; j < Math.Pow(2, i); j++)
-                {
-                    if (roomList.Count() >= desiredNumberOfRooms)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        DivideRoom(tree.Dequeue());
-                    }
-                }
             }
-            
+            DivideRoom(tree.Dequeue());
+        }
+        foreach (Room room in roomList)
+        {
+            Trim(room);
+            PaintTiles(room, floor, floorTile, altFloorTile);
         }
         
+    /*if (roomList.Count() >= desiredNumberOfRooms)
+    {
         PaintTiles(currentRoom, floor, floorTile, altFloorTile);
-        /*if (roomList.Count() >= desiredNumberOfRooms)
+        //ConnectRooms(floor, pathFloorTile);
+    }
+    else
+    {
+        if (currentRoom.width / 2 < minWidth && currentRoom.height / 2 < minHeight)
         {
-            PaintTiles(currentRoom, floor, floorTile, altFloorTile);
-            //ConnectRooms(floor, pathFloorTile);
-        }
-        else
-        {
-            if (currentRoom.width / 2 < minWidth && currentRoom.height / 2 < minHeight)
+            roomList.Remove(currentRoom);
+            if (currentRoom.width > minWidth && currentRoom.height > minHeight)
             {
-                roomList.Remove(currentRoom);
-                if (currentRoom.width > minWidth && currentRoom.height > minHeight)
+                if (currentRoom.width > currentRoom.height)
                 {
-                    if (currentRoom.width > currentRoom.height)
-                    {
-                        cutLocation = rand.Next(2, currentRoom.width - 2);
-                        currentRoom.InsertLeftChild();
-                        CreateLeftChild(currentRoom.leftChild, cutLocation, true);
-                        roomList.Add(currentRoom.leftChild);
-                        tree.Enqueue(currentRoom.leftChild);
-                        currentRoom.InsertRightChild();
-                        CreateRightChild(currentRoom.rightChild, cutLocation, true);
-                        roomList.Add(currentRoom.rightChild);
-                        tree.Enqueue(currentRoom.rightChild);
-                    }
-                    else
-                    {
-                        cutLocation = rand.Next(2, currentRoom.height - 2);
-                        currentRoom.InsertLeftChild();
-                        CreateLeftChild(currentRoom.leftChild, cutLocation, false);
-                        roomList.Add(currentRoom.leftChild);
-                        tree.Enqueue(currentRoom.leftChild);
-                        currentRoom.InsertRightChild();
-                        CreateRightChild(currentRoom.rightChild, cutLocation, false);
-                        roomList.Add(currentRoom.rightChild);
-                        tree.Enqueue(currentRoom.rightChild);
-                    }
+                    cutLocation = rand.Next(2, currentRoom.width - 2);
+                    currentRoom.InsertLeftChild();
+                    CreateLeftChild(currentRoom.leftChild, cutLocation, true);
+                    roomList.Add(currentRoom.leftChild);
+                    tree.Enqueue(currentRoom.leftChild);
+                    currentRoom.InsertRightChild();
+                    CreateRightChild(currentRoom.rightChild, cutLocation, true);
+                    roomList.Add(currentRoom.rightChild);
+                    tree.Enqueue(currentRoom.rightChild);
+                }
+                else
+                {
+                    cutLocation = rand.Next(2, currentRoom.height - 2);
+                    currentRoom.InsertLeftChild();
+                    CreateLeftChild(currentRoom.leftChild, cutLocation, false);
+                    roomList.Add(currentRoom.leftChild);
+                    tree.Enqueue(currentRoom.leftChild);
+                    currentRoom.InsertRightChild();
+                    CreateRightChild(currentRoom.rightChild, cutLocation, false);
+                    roomList.Add(currentRoom.rightChild);
+                    tree.Enqueue(currentRoom.rightChild);
+                }
 
-                    DivideRoom(currentRoom.leftChild);
-                    DivideRoom(currentRoom.rightChild);
-                }
+                DivideRoom(currentRoom.leftChild);
+                DivideRoom(currentRoom.rightChild);
             }
-        }*/
-        /*
-            if (bigger than min width and min height)
+        }
+    }*/
+    /*
+        if (bigger than min width and min height)
+        {
+            if (width > height)
             {
-                if (width > height)
-                {
-                    cut location = min width < random int < width - minwidth
-                    CreateLeftChild(parent,startCorner, width height) -> CreateLeftChild(parent, new Vector2Int(parent.x,parent.y), cutLocation, height)
-                }
+                cut location = min width < random int < width - minwidth
+                CreateLeftChild(parent,startCorner, width height) -> CreateLeftChild(parent, new Vector2Int(parent.x,parent.y), cutLocation, height)
             }
-            */
+        }
+        */
     }
 
     public void CreateLeftChild(Room currentRoom, int cutLocation, bool onXAxis)
@@ -180,10 +182,10 @@ public class DungeonTree : MonoBehaviour
         {
             currentRoom.x = currentRoom.parent.x;
             currentRoom.y = currentRoom.parent.y;
-            currentRoom.width = currentRoom.parent.width - (currentRoom.parent.width - cutLocation);
             currentRoom.topLeftCornerPosition = new Vector2Int(currentRoom.x, currentRoom.y);
             currentRoom.height = currentRoom.parent.height;
-            currentRoom.bottomRightCornerPosition = new Vector2Int(currentRoom.x + cutLocation, currentRoom.y + currentRoom.height);
+            currentRoom.bottomRightCornerPosition = new Vector2Int(cutLocation, currentRoom.y + currentRoom.height);
+            currentRoom.width = currentRoom.bottomRightCornerPosition.x - currentRoom.topLeftCornerPosition.x;
         }
         else
         {
@@ -201,12 +203,12 @@ public class DungeonTree : MonoBehaviour
     {
         if (onXAxis)
         {
-            currentRoom.x = currentRoom.parent.x + cutLocation + 1;
+            currentRoom.x = cutLocation + 1;
             currentRoom.y = currentRoom.parent.y;
-            currentRoom.width = currentRoom.parent.width - (cutLocation + 1);
             currentRoom.topLeftCornerPosition = new Vector2Int(cutLocation + 1, currentRoom.y);
             currentRoom.height = currentRoom.parent.height;
             currentRoom.bottomRightCornerPosition = new Vector2Int(currentRoom.parent.bottomRightCornerPosition.x, currentRoom.parent.bottomRightCornerPosition.y);
+            currentRoom.width = currentRoom.bottomRightCornerPosition.x - currentRoom.topLeftCornerPosition.x;
         }
         else
         {
